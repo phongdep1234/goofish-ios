@@ -77,6 +77,76 @@ actor Translator {
     }
 }
 
+// MARK: - Giữ đăng nhập: lưu cookie của Xianyu/Taobao/Alipay, kể cả cookie "phiên" mà iOS xoá khi app bị tắt
+
+enum CookieVault {
+    static let domains = ["goofish.com", "taobao.com", "tmall.com", "alipay.com", "alibaba.com", "tb.cn", "mmstat.com", "alicdn.com"]
+    static let keepDays: TimeInterval = 30 * 24 * 3600
+
+    private static var fileURL: URL {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("cookies.plist")
+    }
+
+    static func relevant(_ c: HTTPCookie) -> Bool {
+        let d = c.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        return domains.contains { d == $0 || d.hasSuffix("." + $0) }
+    }
+
+    /// Lưu toàn bộ cookie liên quan xuống máy.
+    static func save(_ store: WKHTTPCookieStore) {
+        store.getAllCookies { cookies in
+            var list: [[String: Any]] = []
+            for c in cookies where relevant(c) {
+                var d: [String: Any] = ["name": c.name, "value": c.value, "domain": c.domain, "path": c.path,
+                                        "secure": c.isSecure]
+                if let e = c.expiresDate { d["expires"] = e.timeIntervalSince1970 }
+                if let ss = c.sameSitePolicy?.rawValue { d["sameSite"] = ss }
+                list.append(d)
+            }
+            guard !list.isEmpty,
+                  let data = try? PropertyListSerialization.data(fromPropertyList: list, format: .binary, options: 0) else { return }
+            try? data.write(to: fileURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
+    }
+
+    /// Đặt lại các cookie đã lưu mà hiện đang thiếu, rồi gọi done().
+    static func restore(_ store: WKHTTPCookieStore, done: @escaping () -> Void) {
+        guard let data = try? Data(contentsOf: fileURL),
+              let list = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [[String: Any]],
+              !list.isEmpty else { done(); return }
+        store.getAllCookies { existing in
+            let have = Set(existing.map { "\($0.name)|\($0.domain)|\($0.path)" })
+            let group = DispatchGroup()
+            let now = Date()
+            for d in list {
+                guard let name = d["name"] as? String, let value = d["value"] as? String,
+                      let domain = d["domain"] as? String else { continue }
+                let path = d["path"] as? String ?? "/"
+                if have.contains("\(name)|\(domain)|\(path)") { continue }
+                var expires = now.addingTimeInterval(keepDays) // cookie phiên → giữ 30 ngày
+                if let e = d["expires"] as? Double {
+                    let date = Date(timeIntervalSince1970: e)
+                    if date < now { continue } // đã hết hạn
+                    expires = date
+                }
+                var props: [HTTPCookiePropertyKey: Any] = [
+                    .name: name, .value: value, .domain: domain, .path: path, .expires: expires,
+                ]
+                if (d["secure"] as? Bool) == true { props[.secure] = "TRUE" }
+                if let ss = d["sameSite"] as? String { props[.sameSitePolicy] = ss }
+                guard let cookie = HTTPCookie(properties: props) else { continue }
+                group.enter()
+                store.setCookie(cookie) { group.leave() }
+            }
+            group.notify(queue: .main) { done() }
+        }
+    }
+
+    static func clear() { try? FileManager.default.removeItem(at: fileURL) }
+}
+
 // MARK: - Màn hình trình duyệt
 
 final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandlerWithReply {
@@ -202,7 +272,18 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
             }
         }
         setupMenuButton()
-        web.load(URLRequest(url: Self.home))
+        // Khôi phục đăng nhập trước khi mở trang
+        let cookieStore = cfg.websiteDataStore.httpCookieStore
+        CookieVault.restore(cookieStore) { [weak self] in
+            self?.web.load(URLRequest(url: Self.home))
+        }
+        // Lưu đăng nhập mỗi khi app chuyển xuống nền
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
+            CookieVault.save(cookieStore)
+        }
+        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { _ in
+            CookieVault.save(cookieStore)
+        }
     }
 
     private func installScript(_ ucc: WKUserContentController) {
@@ -281,6 +362,7 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        CookieVault.save(webView.configuration.websiteDataStore.httpCookieStore) // lưu sau mỗi lần tải trang
         webView.scrollView.refreshControl?.endRefreshing()
     }
 
@@ -415,6 +497,7 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
         a.addAction(UIAlertAction(title: "Huỷ", style: .cancel))
         a.addAction(UIAlertAction(title: "Đăng xuất", style: .destructive) { [weak self] _ in
             let store = WKWebsiteDataStore.default()
+            CookieVault.clear()
             store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {
                 self?.web.load(URLRequest(url: Self.home))
             }
