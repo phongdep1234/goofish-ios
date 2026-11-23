@@ -117,6 +117,13 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
     }()
 
     private var lang: String { defaults.string(forKey: "lang") ?? "en" }
+    /// Lớp giao diện kiểu app điện thoại cho trang goofish.com (mặc định bật).
+    private var appSkin: Bool { !defaults.bool(forKey: "skinOff") }
+    private lazy var skinSource: String = {
+        guard let url = Bundle.main.url(forResource: "skin", withExtension: "js"),
+              let s = try? String(contentsOf: url, encoding: .utf8) else { return "" }
+        return s
+    }()
     /// Mở trang sản phẩm bằng bản điện thoại (h5.m.goofish.com). Xianyu chỉ có bản điện thoại cho trang sản phẩm.
     private var mobileItems: Bool { defaults.bool(forKey: "mobileItems") }
 
@@ -200,6 +207,10 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
 
     private func installScript(_ ucc: WKUserContentController) {
         ucc.removeAllUserScripts()
+        if appSkin { // chèn trước bộ dịch; tự kiểm tra chỉ chạy trên www.goofish.com
+            ucc.addUserScript(WKUserScript(source: "window.__gfLang=\"\(lang)\";\n" + skinSource,
+                                           injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         guard lang != "off" else { return }
         let src = Self.shim + "window.__gfLang=\"\(lang)\";\n" + scriptSource
         ucc.addUserScript(WKUserScript(source: src, injectionTime: .atDocumentStart, forMainFrameOnly: false))
@@ -359,6 +370,13 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
         })
         sheet.addAction(UIAlertAction(title: "🌐  Ngôn ngữ dịch: \(langLabel)", style: .default) { [weak self] _ in
             self?.chooseLanguage()
+        })
+        sheet.addAction(UIAlertAction(title: appSkin ? "🖥  Tắt giao diện app (xem trang gốc)"
+                                                     : "📲  Bật giao diện app", style: .default) { [weak self] _ in
+            guard let self else { return }
+            self.defaults.set(self.appSkin, forKey: "skinOff")
+            self.installScript(self.web.configuration.userContentController)
+            self.web.reload()
         })
         sheet.addAction(UIAlertAction(title: mobileItems ? "💻  Trang sản phẩm: chuyển về bản máy tính"
                                                          : "📱  Trang sản phẩm: chuyển sang bản điện thoại", style: .default) { [weak self] _ in
