@@ -2,8 +2,7 @@
 (function () {
   if (window.__goofishDich) return;
   window.__goofishDich = true;
-  var bridge = window.GoofishNative;
-  if (!bridge) return;
+  var bridge = window.GoofishNative || null;
   var lang = window.__gfLang || "en";
   if (lang === "off") return;
 
@@ -20,7 +19,59 @@
   var reqSeq = 0;
   var callbacks = {};
 
-  bridge.onmessage = function (ev) {
+  // Gọi thẳng Google Translate từ trang (trả về CORS *), giữ bản fetch gốc trước khi trang kịp sửa nó.
+  var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+  // Nguồn 1 + 2: dịch nhiều câu một lúc, trả về đúng thứ tự (POST, nhiều tham số q)
+  var MULTI = [
+    "https://translate.googleapis.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl=",
+    "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=zh-CN&tl="
+  ];
+  // Nguồn 3: dịch cả khối, tách theo dòng
+  var SINGLE = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&dt=t&tl=";
+
+  function post(url, body) {
+    if (!nativeFetch) return Promise.reject(new Error("no fetch"));
+    return nativeFetch(url + encodeURIComponent(lang), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body,
+      credentials: "omit"
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function multi(url, texts) {
+    var body = texts.map(function (t) { return "q=" + encodeURIComponent(t); }).join("&");
+    return post(url, body).then(function (arr) {
+      if (typeof arr === "string") arr = [arr];
+      if (!Array.isArray(arr) || arr.length !== texts.length) throw new Error("bad length");
+      return arr.map(function (x) {
+        if (Array.isArray(x)) x = x[0];
+        return typeof x === "string" && x.trim() ? x.trim() : null;
+      });
+    });
+  }
+
+  function single(texts) {
+    var clean = texts.map(function (t) { return t.replace(/\s*\n\s*/g, " "); });
+    return post(SINGLE, "q=" + encodeURIComponent(clean.join("\n"))).then(function (j) {
+      var joined = (j && j[0] ? j[0] : []).map(function (seg) { return (seg && seg[0]) || ""; }).join("");
+      var parts = joined.split("\n");
+      if (parts.length !== clean.length) throw new Error("bad length");
+      return parts.map(function (x) { return x.trim() || null; });
+    });
+  }
+
+  function translateDirect(texts) {
+    return multi(MULTI[0], texts)
+      .catch(function () { return multi(MULTI[1], texts); })
+      .catch(function () { return single(texts); });
+  }
+
+  // Dự phòng: nhờ app dịch (cầu nối GoofishNative), nếu gọi thẳng bị lỗi
+  if (bridge) bridge.onmessage = function (ev) {
     var msg = null;
     try { msg = JSON.parse(ev.data); } catch (e) { return; }
     var cb = msg && callbacks[msg.id];
@@ -29,14 +80,38 @@
     cb(msg.result || null);
   };
 
-  function askNative(texts) {
+  function askBridge(texts) {
     return new Promise(function (resolve) {
+      if (!bridge) return resolve(null);
       var id = "r" + (++reqSeq) + "_" + Math.random().toString(36).slice(2, 8);
       callbacks[id] = resolve;
       setTimeout(function () { if (callbacks[id]) { delete callbacks[id]; resolve(null); } }, 30000);
       try { bridge.postMessage(JSON.stringify({ id: id, texts: texts, tl: lang })); }
       catch (e) { delete callbacks[id]; resolve(null); }
     });
+  }
+
+  function askNative(texts) {
+    return translateDirect(texts).catch(function () { return askBridge(texts); });
+  }
+
+  // Bộ nhớ dịch lưu lại giữa các lần mở app (localStorage của trang)
+  var STORE = "gfTr_" + lang;
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE) || "{}");
+    Object.keys(saved).forEach(function (k) { memo.set(k, saved[k]); });
+  } catch (e) {}
+  var saveTimer = null;
+  function persist() {
+    if (saveTimer) return;
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      try {
+        var obj = {}, keys = Array.from(memo.keys()), from = Math.max(0, keys.length - 4000);
+        for (var i = from; i < keys.length; i++) obj[keys[i]] = memo.get(keys[i]);
+        localStorage.setItem(STORE, JSON.stringify(obj));
+      } catch (e) {}
+    }, 2000);
   }
 
   function skippable(el) {
@@ -132,6 +207,7 @@
             var tr = res[j];
             if (!tr) return;
             memo.set(k, tr);
+            persist();
             batchMap.get(k).forEach(function (target) { apply(target, tr); });
           });
         }
@@ -154,6 +230,9 @@
       attributes: true, attributeFilter: ATTRS
     });
   }
+
+  // Quét lại định kỳ: trang có thể tự vẽ lại chữ gốc (đã có trong bộ nhớ dịch thì thay ngay, không cần mạng)
+  setInterval(function () { if (document.body) scan(document.body); }, 3000);
 
   if (document.documentElement) start();
   else document.addEventListener("DOMContentLoaded", start);

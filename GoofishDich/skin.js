@@ -47,7 +47,7 @@
     C("search-input") + "{width:100%!important;height:38px!important;border:0!important;outline:0!important;background:transparent!important;padding:0 84px 0 16px!important;font-size:15px!important;box-sizing:border-box!important}",
     C("search-icon") + "{position:absolute!important;right:3px!important;top:3px!important;width:72px!important;height:32px!important;border-radius:16px!important;background:#111!important;color:#fff!important;border:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important}",
     C("search-icon") + " img{filter:invert(1)!important}",
-    C("search-icon") + " span{color:#fff!important;font-size:13px!important}",
+    C("search-icon") + " span{color:#fff!important;font-size:13px!important;white-space:nowrap!important;overflow:hidden!important;max-width:44px!important;text-overflow:ellipsis!important}",
     C("user-order-container") + "{display:flex!important;gap:10px!important;margin:0!important;flex:none!important}",
     C("user-order-container") + " " + C("nick") + "," + C("orderText") + "{display:none!important}",
 
@@ -84,6 +84,43 @@
     C("row4-wrap-seller") + "{width:auto!important;height:auto!important;display:flex!important;align-items:center!important;gap:6px!important;margin-top:4px!important;flex-wrap:nowrap!important;overflow:hidden!important}",
     C("seller-text-wrap") + "{font-size:12px!important;color:#888!important;width:auto!important;min-width:0!important;overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;flex:1!important}",
     C("credit-container") + "{display:none!important}",
+
+    // ===== Trang chi tiết sản phẩm (/item): ảnh to ở trên, thông tin bên dưới, nút mua dính đáy như app =====
+    "html.gf-item #gf-tabbar{display:none!important}",
+    "html.gf-item body{padding-bottom:calc(72px + env(safe-area-inset-bottom))!important}",
+    "html.gf-item " + C("item-container") + "{display:block!important;min-height:0!important}",
+    "html.gf-item " + C("item-user-container") + "{width:100%!important;height:auto!important;min-height:60px!important;margin:8px 0 0!important;padding:8px 0!important;border-radius:12px!important;box-sizing:border-box!important}",
+    "html.gf-item " + C("item-user-info-container") + "{width:auto!important;flex:1!important;min-width:0!important;margin-left:10px!important;overflow:hidden!important}",
+    "html.gf-item " + C("item-user-fish-shop") + "{margin-right:10px!important}",
+    "html.gf-item " + C("item-main-container") + "{display:flex!important;flex-direction:column!important;width:100%!important;min-height:0!important;margin-top:8px!important;border-radius:12px!important;overflow:hidden!important}",
+    "html.gf-item " + C("item-main-container") + " " + C("window") + ",html.gf-item " + C("item-main-window") + "{display:flex!important;flex-direction:column!important;width:100%!important;height:auto!important;margin:0!important;position:static!important}",
+    "html.gf-item " + C("item-main-window-list") + ",html.gf-item " + C("item-main-container") + " " + C("list") + "{display:none!important}",
+    "html.gf-item " + C("item-main-window-carousel") + ",html.gf-item " + C("item-main-container") + " " + C("carousel") + "{width:100%!important;height:auto!important;aspect-ratio:1/1!important;margin:0!important;border-radius:0!important;display:block!important}",
+    "html.gf-item " + C("carousel-container") + "{width:100%!important;height:100%!important;border-radius:0!important}",
+    "html.gf-item " + C("carousel-container") + " img{width:100%!important;height:100%!important;object-fit:contain!important}",
+    "html.gf-item " + C("player-wrapper") + "{height:100%!important}",
+    "html.gf-item " + C("item-main-window-carousel") + " " + C("tips") + "{display:none!important}",
+    "html.gf-item " + C("item-main-info") + ",html.gf-item " + C("item-main-container") + " " + C("info") + "{width:100%!important;max-width:100%!important;margin:0!important;padding:12px 12px 16px!important;box-sizing:border-box!important}",
+    "html.gf-item " + C("labels") + ">*{width:50%!important;box-sizing:border-box!important;padding-right:8px!important}",
+    "html.gf-item " + C("labels") + " " + C("value") + "{max-width:none!important}",
+    "html.gf-item " + C("labels") + " " + C("label") + "{margin-right:6px!important;white-space:nowrap!important;flex:none!important}",
+    "html.gf-item " + C("notloginMask") + "{width:100%!important;left:0!important}",
+    // Thanh nút Muốn mua / Mua ngay dính đáy màn hình
+    "html.gf-item " + C("buttons") + "{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;height:auto!important;margin:0!important;padding:8px 10px calc(8px + env(safe-area-inset-bottom))!important;background:#fff!important;box-shadow:0 -1px 6px rgba(0,0,0,.08)!important;box-sizing:border-box!important;z-index:2147482000!important;display:flex!important;gap:8px!important}",
+    "html.gf-item " + C("buttons") + " " + C("left") + "{flex:1!important;width:auto!important;height:46px!important;margin:0!important;font-size:16px!important}",
+    "html.gf-item " + C("buttons") + " " + C("left") + ">*{flex:1!important;width:auto!important;height:46px!important}",
+    "html.gf-item " + C("buttons") + " " + C("right") + "{width:auto!important;height:46px!important;padding:0 16px!important;font-size:15px!important}",
+    "html.gf-item " + C("buttons") + " " + C("banned") + "{height:46px!important;font-size:15px!important}",
+    "html.gf-item " + C("buttons") + " " + C("notice") + "{display:none!important}",
+    "html.gf-item " + C("sellerButtonGroup") + "{gap:8px!important}",
+    "html.gf-item " + C("sellerButton") + "{height:46px!important;font-size:15px!important}",
+    // Phần "Gợi ý cho bạn" bên dưới
+    "html.gf-item " + C("item-feeds-container") + "{display:flex!important;flex-direction:column!important;align-items:stretch!important;background:transparent!important;margin-top:12px!important}",
+    "html.gf-item " + C("item-feeds-container") + ">*{width:100%!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}",
+
+    // Thẻ sản phẩm ở mọi trang: không để chữ tràn ra ngoài thẻ
+    C("feeds-item-wrap") + "{justify-content:flex-start!important;align-content:flex-start!important;border:0!important}",
+    C("feeds-item-wrap") + " *{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}",
 
     // Hộp thoại (đăng nhập...) vừa màn hình
     ".ant-modal{max-width:calc(100vw - 16px)!important;width:calc(100vw - 16px)!important;margin:0 auto!important;top:max(20px,env(safe-area-inset-top))!important;padding:0!important}",
@@ -132,7 +169,11 @@
       '<a href="/personal" class="' + on("/personal") + '">' + ICON.me + "<span>" + L.me + "</span></a>";
     document.body.appendChild(bar);
   }
+  function markPage() {
+    if (document.documentElement) document.documentElement.classList.toggle("gf-item", location.pathname === "/item");
+  }
   function refreshTabbar() {
+    markPage();
     var bar = document.getElementById("gf-tabbar");
     if (bar) bar.remove();
     addTabbar();
@@ -180,7 +221,9 @@
   // ---------- Khởi động ----------
   fixViewport();
   addStyle();
+  markPage();
   new MutationObserver(function () {
+    markPage();
     fixViewport();
     addStyle();
     addTabbar();
