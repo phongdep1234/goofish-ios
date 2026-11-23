@@ -37,17 +37,17 @@
 
     // Ẩn phần chỉ dành cho máy tính
     C("sidebar-container") + "," + C("bottomLead") + "," + C("announcementWrap") + "," + C("logo-container") + "," +
-    C("search-tip") + "," + C("banner-container") + ",footer," + C("footer") + "{display:none!important}",
+    C("search-tip") + "," + C("banner-container") + ",footer," + C("footer") + "," + C("footer-container") + "{display:none!important}",
 
     // Đầu trang: chỉ còn ô tìm kiếm, dính trên cùng
     C("header-container") + "{position:sticky!important;top:0!important;z-index:50!important;height:auto!important;min-width:0!important;width:100%!important;background:#f6f6f6!important;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px!important;box-sizing:border-box!important}",
     C("header-main") + "{width:100%!important;min-width:0!important;height:auto!important;padding:0!important;margin:0!important;display:flex!important;gap:8px!important;align-items:center!important}",
     C("header-right") + "{width:100%!important;min-width:0!important;height:auto!important;padding:0!important;margin:0!important;display:flex!important;align-items:center!important;gap:10px!important}",
-    C("search-container") + "{flex:1!important;width:auto!important;min-width:0!important;height:42px!important;margin:0!important;position:relative!important;border:2px solid #111!important;border-radius:21px!important;background:#fff!important;box-sizing:border-box!important;overflow:hidden!important;display:flex!important;align-items:center!important}",
-    C("search-input") + "{width:100%!important;height:38px!important;border:0!important;outline:0!important;background:transparent!important;padding:0 84px 0 16px!important;font-size:15px!important;box-sizing:border-box!important}",
-    C("search-icon") + "{position:absolute!important;right:3px!important;top:3px!important;width:72px!important;height:32px!important;border-radius:16px!important;background:#111!important;color:#fff!important;border:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important}",
-    C("search-icon") + " img{filter:invert(1)!important}",
-    C("search-icon") + " span{color:#fff!important;font-size:13px!important;white-space:nowrap!important;overflow:hidden!important;max-width:44px!important;text-overflow:ellipsis!important}",
+    C("header-container") + " " + C("search-container") + "{flex:1!important;width:auto!important;min-width:0!important;height:42px!important;margin:0!important;position:relative!important;border:2px solid #111!important;border-radius:21px!important;background:#fff!important;box-sizing:border-box!important;overflow:hidden!important;display:flex!important;align-items:center!important}",
+    C("header-container") + " " + C("search-input") + "{width:100%!important;height:38px!important;border:0!important;outline:0!important;background:transparent!important;padding:0 100px 0 16px!important;font-size:15px!important;box-sizing:border-box!important}",
+    C("header-container") + " " + C("search-icon") + "{position:absolute!important;right:3px!important;top:3px!important;width:auto!important;min-width:72px!important;padding:0 12px!important;height:32px!important;border-radius:16px!important;background:#111!important;color:#fff!important;border:0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:4px!important}",
+    C("header-container") + " " + C("search-icon") + " img{filter:invert(1)!important}",
+    C("header-container") + " " + C("search-icon") + " span{color:#fff!important;font-size:13px!important;white-space:nowrap!important;overflow:hidden!important;max-width:64px!important;text-overflow:ellipsis!important}",
     C("user-order-container") + "{display:flex!important;gap:10px!important;margin:0!important;flex:none!important}",
     C("user-order-container") + " " + C("nick") + "," + C("orderText") + "{display:none!important}",
 
@@ -66,6 +66,9 @@
     C("filter-tab-bold") + "," + C("filter-tab-normal") + "{position:static!important;padding:0!important;width:auto!important}",
     C("filter-tab") + ":not(" + C("filter-tab-checked") + ") " + C("filter-tab-bold") + "{display:none!important}",
     C("filter-tab-checked") + " " + C("filter-tab-normal") + "{display:none!important}",
+
+    // Khung tự co giãn của trang (tính theo bố cục máy tính) → bỏ giới hạn chiều cao để kéo xem tiếp được
+    C("grow-height") + "{max-height:none!important;overflow:visible!important}",
 
     // Lưới sản phẩm 2 cột
     C("feeds-list-container") + "{display:grid!important;grid-template-columns:1fr 1fr!important;align-items:start!important;gap:8px!important;width:100%!important;min-width:0!important;height:auto!important;padding:4px 0 12px!important;margin:0!important}",
@@ -108,8 +111,14 @@
     // Thanh nút Muốn mua / Mua ngay dính đáy màn hình
     "html.gf-item " + C("buttons") + "{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;height:auto!important;margin:0!important;padding:8px 10px calc(8px + env(safe-area-inset-bottom))!important;background:#fff!important;box-shadow:0 -1px 6px rgba(0,0,0,.08)!important;box-sizing:border-box!important;z-index:2147482000!important;display:flex!important;gap:8px!important}",
     "html.gf-item " + C("buttons") + " " + C("left") + "{flex:1!important;width:auto!important;height:46px!important;margin:0!important;font-size:16px!important}",
-    "html.gf-item " + C("buttons") + " " + C("left") + ">*{flex:1!important;width:auto!important;height:46px!important}",
-    "html.gf-item " + C("buttons") + " " + C("right") + "{width:auto!important;height:46px!important;padding:0 16px!important;font-size:15px!important}",
+    "html.gf-item body " + C("buttons") + " " + C("left") + ">*," +
+    "html.gf-item body " + C("buttons") + " " + C("left") + " " + C("want") + "," +
+    "html.gf-item body " + C("buttons") + " " + C("left") + " " + C("buy") +
+      "{flex:1 1 0!important;width:auto!important;min-width:0!important;height:46px!important;justify-content:center!important;gap:6px!important;padding:0 6px!important;white-space:nowrap!important;overflow:hidden!important;box-sizing:border-box!important}",
+    "html.gf-item body " + C("buttons") + " " + C("left") + " *{position:static!important;margin:0!important;max-width:100%!important}",
+    "html.gf-item body " + C("buttons") + " " + C("left") + " svg,html.gf-item body " + C("buttons") + " " + C("left") + " img{width:20px!important;height:20px!important;flex:none!important}",
+    "html.gf-item body " + C("buttons") + " " + C("right") + "{flex:none!important;width:auto!important;min-width:0!important;height:46px!important;padding:0 14px!important;font-size:15px!important;white-space:nowrap!important;margin:0!important}",
+    "html.gf-item body " + C("buttons") + " " + C("left") + "{flex:1 1 auto!important;min-width:0!important;width:auto!important;display:flex!important;overflow:hidden!important;border-radius:23px!important}",
     "html.gf-item " + C("buttons") + " " + C("banned") + "{height:46px!important;font-size:15px!important}",
     "html.gf-item " + C("buttons") + " " + C("notice") + "{display:none!important}",
     "html.gf-item " + C("sellerButtonGroup") + "{gap:8px!important}",
@@ -117,6 +126,8 @@
     // Phần "Gợi ý cho bạn" bên dưới
     "html.gf-item " + C("item-feeds-container") + "{display:flex!important;flex-direction:column!important;align-items:stretch!important;background:transparent!important;margin-top:12px!important}",
     "html.gf-item " + C("item-feeds-container") + ">*{width:100%!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}",
+    C("item-feeds-title") + "{width:100%!important;flex:0 0 100%!important;grid-column:1/-1!important;height:auto!important;margin:16px 0 8px!important;padding-left:4px!important;font-size:18px!important}",
+    ".gf-stack{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin-left:0!important;margin-right:0!important;padding-left:0!important;padding-right:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}",
 
     // Thẻ sản phẩm ở mọi trang: không để chữ tràn ra ngoài thẻ
     C("feeds-item-wrap") + "{justify-content:flex-start!important;align-content:flex-start!important;border:0!important}",
@@ -189,12 +200,15 @@
   var fitTimer = null;
   function fitWide() {
     fitTimer = null;
+    stackFeedParents();
     var vw = document.documentElement.clientWidth || window.innerWidth;
     var all = document.body ? document.body.getElementsByTagName("*") : [];
     for (var i = 0; i < all.length; i++) {
       var el = all[i];
       if (el.id === "gf-tabbar" || el.closest && el.closest("#gf-tabbar")) continue;
+      if (typeof SVGElement !== "undefined" && el instanceof SVGElement) continue; // biểu tượng: bỏ qua
       var w = el.offsetWidth;
+      if (typeof w !== "number") continue;
       if (w <= vw + 1) continue;
       var cs = getComputedStyle(el);
       if (cs.position === "fixed" || cs.position === "absolute") { el.style.setProperty("max-width", "100vw", "important"); continue; }
@@ -204,6 +218,24 @@
       el.style.setProperty("max-width", "100%", "important");
       el.style.setProperty("box-sizing", "border-box", "important");
       if (cs.display.indexOf("flex") >= 0 && cs.flexDirection.indexOf("row") === 0) el.style.setProperty("flex-wrap", "wrap", "important");
+    }
+  }
+  function stackFeedParents() {
+    if (location.pathname === "/") return;
+    var lists = document.querySelectorAll('[class*="feeds-list-container--"]');
+    for (var i = 0; i < lists.length; i++) {
+      var p = lists[i].parentElement;
+      for (var d = 0; p && p !== document.body && d < 6; d++, p = p.parentElement) {
+        if (/content-container--/.test(p.className || "")) break;
+        if (!p.classList.contains("gf-stack")) p.classList.add("gf-stack");
+        // các khối anh em (tiêu đề "Gợi ý cho bạn"...) chiếm trọn chiều ngang
+        for (var k = 0; k < p.children.length; k++) {
+          var c = p.children[k];
+          if (c === lists[i] || c.contains(lists[i])) continue;
+          c.style.setProperty("width", "100%", "important");
+          c.style.setProperty("max-width", "100%", "important");
+        }
+      }
     }
   }
   function scheduleFit() { if (!fitTimer) fitTimer = setTimeout(fitWide, 400); }

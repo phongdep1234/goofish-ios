@@ -28,8 +28,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.phongdep.goofishdich
         PRODUCT_NAME: GoofishDich
-        MARKETING_VERSION: "1.3"
-        CURRENT_PROJECT_VERSION: "4"
+        MARKETING_VERSION: "1.4"
+        CURRENT_PROJECT_VERSION: "5"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_STRICT_CONCURRENCY: minimal
