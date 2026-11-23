@@ -1,0 +1,42 @@
+# Mô tả project cho XcodeGen. Chạy `xcodegen` để tạo GoofishDich.xcodeproj.
+name: GoofishDich
+options:
+  bundleIdPrefix: com.phongdep
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  GoofishDich:
+    type: application
+    platform: iOS
+    sources:
+      - path: GoofishDich
+        excludes: ["translate.js"]
+      - path: GoofishDich/translate.js
+        buildPhase: resources
+    info:
+      path: GoofishDich/Info.plist
+      properties:
+        ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        LSApplicationQueriesSchemes: [alipay, alipays]
+        NSCameraUsageDescription: "Chụp ảnh để gửi cho người bán."
+        NSPhotoLibraryUsageDescription: "Chọn ảnh để gửi cho người bán."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.phongdep.goofishdich
+        PRODUCT_NAME: GoofishDich
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_STRICT_CONCURRENCY: minimal
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Goofish Dịch"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        CODE_SIGN_STYLE: Automatic

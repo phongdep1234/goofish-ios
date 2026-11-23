@@ -1,0 +1,66 @@
+# Build file GoofishDich.ipa (chưa ký) trên máy Mac của GitHub.
+# Chạy tự động mỗi lần tải code lên, hoặc bấm "Run workflow" trong tab Actions.
+# Kết quả: tab Releases (bản build-N), hoặc tab Actions -> lần chạy -> Artifacts -> GoofishDich.ipa
+name: Build IPA
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cài XcodeGen
+        run: brew install xcodegen
+
+      - name: Tạo project Xcode
+        run: xcodegen generate
+
+      - name: Build app (không ký)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project GoofishDich.xcodeproj \
+            -scheme GoofishDich \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee xcodebuild.log | grep -E "error:|BUILD" || true
+          test -f build/Build/Products/Release-iphoneos/GoofishDich.app/GoofishDich
+
+      - name: Đóng gói .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/GoofishDich.app Payload/
+          zip -qry GoofishDich.ipa Payload
+          ls -la GoofishDich.ipa
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: GoofishDich.ipa
+          path: GoofishDich.ipa
+          retention-days: 30
+
+      - name: Tạo bản phát hành (Releases)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "build-${{ github.run_number }}" GoofishDich.ipa \
+            --title "Goofish Dịch (bản build ${{ github.run_number }})" \
+            --notes "File .ipa chưa ký. Goofish Dịch — dùng Xianyu (闲鱼) với giao diện tự dịch sang tiếng Anh/tiếng Việt."
+
+      - name: Lưu log khi lỗi
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
