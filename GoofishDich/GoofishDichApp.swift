@@ -82,7 +82,6 @@ actor Translator {
 final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandlerWithReply {
     static let home = URL(string: "https://www.goofish.com/")!
     static let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1"
-    static let desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15"
     /// Lược đồ mở app Xianyu/Taobao gốc: chặn để luôn ở lại trong app này.
     static let blockedSchemes: Set<String> = ["fleamarket", "idlefish", "taobao", "tbopen", "tmall", "tbfleamarket"]
     /// Các trang của Xianyu/Taobao: không cho iOS tự nhảy sang app gốc qua "universal link".
@@ -109,6 +108,7 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
     private let menuButton = UIButton(type: .system)
     private let translator = Translator()
     private var progressObs: NSKeyValueObservation?
+    private var urlObs: NSKeyValueObservation?
     private let defaults = UserDefaults.standard
     private lazy var scriptSource: String = {
         guard let url = Bundle.main.url(forResource: "translate", withExtension: "js"),
@@ -117,7 +117,38 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
     }()
 
     private var lang: String { defaults.string(forKey: "lang") ?? "en" }
-    private var desktop: Bool { defaults.bool(forKey: "desktop") }
+    /// Mở trang sản phẩm bằng bản điện thoại (h5.m.goofish.com). Xianyu chỉ có bản điện thoại cho trang sản phẩm.
+    private var mobileItems: Bool { defaults.bool(forKey: "mobileItems") }
+
+    /// Lấy mã sản phẩm từ link trang sản phẩm (bản máy tính hoặc bản điện thoại).
+    private static func itemId(_ url: URL?, mobileHost: Bool) -> String? {
+        guard let url, let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+        let host = comps.host?.lowercased() ?? ""
+        let ok = mobileHost ? host == "h5.m.goofish.com" : (host == "www.goofish.com" || host == "goofish.com")
+        guard ok, comps.path == "/item",
+              let id = comps.queryItems?.first(where: { $0.name == "id" })?.value,
+              !id.isEmpty, id.allSatisfy(\.isNumber) else { return nil }
+        return id
+    }
+
+    /// Đang ở chế độ điện thoại + link là trang sản phẩm bản máy tính → link bản điện thoại.
+    private func mobileRedirect(_ url: URL?) -> URL? {
+        guard mobileItems, let id = Self.itemId(url, mobileHost: false) else { return nil }
+        return URL(string: "https://h5.m.goofish.com/item?id=\(id)")
+    }
+
+    private func toggleItemMode() {
+        let toMobile = !mobileItems
+        defaults.set(toMobile, forKey: "mobileItems")
+        if toMobile, let id = Self.itemId(web.url, mobileHost: false) {
+            web.load(URLRequest(url: URL(string: "https://h5.m.goofish.com/item?id=\(id)")!))
+        } else if !toMobile, let id = Self.itemId(web.url, mobileHost: true) {
+            web.load(URLRequest(url: URL(string: "https://www.goofish.com/item?id=\(id)")!))
+        }
+        showMessage(toMobile
+            ? "Trang sản phẩm sẽ mở bằng bản điện thoại. Trang chủ, tìm kiếm, tin nhắn vẫn là bản máy tính (Xianyu không có bản điện thoại cho các trang này)."
+            : "Trang sản phẩm sẽ mở bằng bản máy tính (đầy đủ tính năng).")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -133,7 +164,7 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
         web.navigationDelegate = self
         web.uiDelegate = self
         web.allowsBackForwardNavigationGestures = true // vuốt từ mép trái để quay lại
-        web.customUserAgent = desktop ? Self.desktopUA : Self.mobileUA
+        web.customUserAgent = Self.mobileUA
         if #available(iOS 16.4, *) { web.isInspectable = true }
         let refresh = UIRefreshControl()
         refresh.addTarget(self, action: #selector(pullRefresh(_:)), for: .valueChanged)
@@ -155,6 +186,13 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
         progressObs = web.observe(\.estimatedProgress, options: [.new]) { [weak self] w, _ in
             self?.progress.setProgress(Float(w.estimatedProgress), animated: true)
             self?.progress.isHidden = w.estimatedProgress >= 1
+        }
+        // Trang máy tính đổi địa chỉ bằng JavaScript (không tải lại trang) → bắt ở đây
+        urlObs = web.observe(\.url, options: [.new]) { [weak self] w, _ in
+            DispatchQueue.main.async {
+                guard let self, let m = self.mobileRedirect(w.url) else { return }
+                w.load(URLRequest(url: m))
+            }
         }
         setupMenuButton()
         web.load(URLRequest(url: Self.home))
@@ -200,9 +238,14 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
                  preferences: WKWebpagePreferences,
                  decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
-        preferences.preferredContentMode = desktop ? .desktop : .mobile
+        preferences.preferredContentMode = .mobile
         guard let url = action.request.url, let scheme = url.scheme?.lowercased() else {
             decisionHandler(.allow, preferences); return
+        }
+        if action.targetFrame?.isMainFrame ?? true, let m = mobileRedirect(url) {
+            decisionHandler(.cancel, preferences)
+            webView.load(URLRequest(url: m))
+            return
         }
         if ["http", "https", "about", "data", "blob", "javascript"].contains(scheme) {
             let host = url.host?.lowercased() ?? ""
@@ -317,12 +360,9 @@ final class BrowserVC: UIViewController, WKNavigationDelegate, WKUIDelegate, WKS
         sheet.addAction(UIAlertAction(title: "🌐  Ngôn ngữ dịch: \(langLabel)", style: .default) { [weak self] _ in
             self?.chooseLanguage()
         })
-        sheet.addAction(UIAlertAction(title: desktop ? "📱  Chuyển sang giao diện điện thoại"
-                                                     : "💻  Chuyển sang giao diện máy tính", style: .default) { [weak self] _ in
-            guard let self else { return }
-            self.defaults.set(!self.desktop, forKey: "desktop")
-            self.web.customUserAgent = self.desktop ? Self.desktopUA : Self.mobileUA
-            self.web.reload()
+        sheet.addAction(UIAlertAction(title: mobileItems ? "💻  Trang sản phẩm: chuyển về bản máy tính"
+                                                         : "📱  Trang sản phẩm: chuyển sang bản điện thoại", style: .default) { [weak self] _ in
+            self?.toggleItemMode()
         })
         sheet.addAction(UIAlertAction(title: "📋  Sao chép link trang này", style: .default) { [weak self] _ in
             UIPasteboard.general.string = self?.web.url?.absoluteString
