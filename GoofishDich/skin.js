@@ -32,7 +32,6 @@
   var css = [
     "html,body{min-width:0!important;width:100%!important;overflow-x:hidden!important;background:#f6f6f6!important;-webkit-text-size-adjust:100%!important}",
     "body{padding-bottom:calc(64px + env(safe-area-inset-bottom))!important}",
-    "*{max-width:100vw}",
     "img,video{max-width:100%!important}",
 
     // Ẩn phần chỉ dành cho máy tính
@@ -100,7 +99,16 @@
     "html.gf-item " + C("item-main-window-list") + ",html.gf-item " + C("item-main-container") + " " + C("list") + "{display:none!important}",
     "html.gf-item " + C("item-main-window-carousel") + ",html.gf-item " + C("item-main-container") + " " + C("carousel") + "{width:100%!important;height:auto!important;aspect-ratio:1/1!important;margin:0!important;border-radius:0!important;display:block!important}",
     "html.gf-item " + C("carousel-container") + "{width:100%!important;height:100%!important;border-radius:0!important}",
-    "html.gf-item " + C("carousel-container") + " img{width:100%!important;height:100%!important;object-fit:contain!important}",
+    "html.gf-item " + C("carousel-container") + " img{max-width:100%!important;width:100%!important;height:100%!important;object-fit:contain!important}",
+    "html.gf-item " + C("carousel-container") + ">*," +
+    "html.gf-item " + C("carousel-container") + " .slick-slider," +
+    "html.gf-item " + C("carousel-container") + " .slick-list," +
+    "html.gf-item " + C("carousel-container") + " .slick-track," +
+    "html.gf-item " + C("carousel-container") + " .slick-slide," +
+    "html.gf-item " + C("carousel-container") + " .slick-slide>div," +
+    "html.gf-item " + C("carouselItem") + ",html.gf-item " + C("carouselImg") + "{height:100%!important}",
+    "html.gf-item " + C("carousel-container") + ">*{width:100%!important}",
+    "html.gf-item " + C("carouselImg") + "{width:100%!important;object-fit:contain!important}",
     "html.gf-item " + C("player-wrapper") + "{height:100%!important}",
     "html.gf-item " + C("item-main-window-carousel") + " " + C("tips") + "{display:none!important}",
     "html.gf-item " + C("item-main-info") + ",html.gf-item " + C("item-main-container") + " " + C("info") + "{width:100%!important;max-width:100%!important;margin:0!important;padding:12px 12px 16px!important;box-sizing:border-box!important}",
@@ -180,8 +188,17 @@
       '<a href="/personal" class="' + on("/personal") + '">' + ICON.me + "<span>" + L.me + "</span></a>";
     document.body.appendChild(bar);
   }
+  var lastItemUrl = "";
   function markPage() {
-    if (document.documentElement) document.documentElement.classList.toggle("gf-item", location.pathname === "/item");
+    if (!document.documentElement) return;
+    var isItem = location.pathname === "/item";
+    document.documentElement.classList.toggle("gf-item", isItem);
+    if (isItem && location.href !== lastItemUrl) {
+      lastItemUrl = location.href;
+      [600, 1500, 3000].forEach(function (t) {
+        setTimeout(function () { try { window.dispatchEvent(new Event("resize")); } catch (e) {} }, t);
+      });
+    }
   }
   function refreshTabbar() {
     markPage();
@@ -207,6 +224,7 @@
       var el = all[i];
       if (el.id === "gf-tabbar" || el.closest && el.closest("#gf-tabbar")) continue;
       if (typeof SVGElement !== "undefined" && el instanceof SVGElement) continue; // biểu tượng: bỏ qua
+      if (el.closest && el.closest('.slick-slider,.swiper,.swiper-container,[class*="carousel"],[class*="slider"],[class*="swiper"]')) continue; // dải ảnh trượt: phải rộng hơn màn hình
       var w = el.offsetWidth;
       if (typeof w !== "number") continue;
       if (w <= vw + 1) continue;
